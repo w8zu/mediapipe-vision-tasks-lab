@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code (로컬 설정)
+.claude/
+
+# hand_detection.py 이미지 모드가 생성하는 결과물
+*_hands.jpg
+
+# 녹화/스크린샷 원본 (필요하면 골라서 따로 추가)
+*.mp4
+*.avi
+
+# NOTE: models/*.task (약 20MB)는 재현성을 위해 일부러 ignore하지 않음
