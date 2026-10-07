@@ -1,0 +1,263 @@
+:root {
+  color-scheme: dark;
+  /* 공통 디자인 토큰: 메뉴 / How to Play / 게임 HUD가 같은 색, 같은 반투명 UI를 쓴다 */
+  --ink: #e1f5fa;                          /* pale cyan-white (interaction marker와 같은 색) */
+  --ink-dim: rgba(225, 245, 250, 0.62);
+  --line: rgba(225, 245, 250, 0.18);
+  --coral: #f08078;
+  --gold: #e8c46e;
+  --mint: #8cd0aa;
+  --radius: 18px;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #0b1824;
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  overflow-x: hidden;
+}
+
+/* ---------- 게임 세계 배경: 깊은 바다 + 은은한 색 번짐 + 가장자리 어둡게 ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  background: radial-gradient(120% 90% at 50% 0%, #1b3a4f 0%, #0f2232 55%, #0a141e 100%);
+  overflow: hidden;
+}
+.orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.18; }
+.orb.coral { width: 38vmax; height: 38vmax; left: -12vmax; bottom: -14vmax; background: var(--coral); }
+.orb.gold { width: 30vmax; height: 30vmax; right: -8vmax; top: 8vh; background: var(--gold); opacity: 0.12; }
+.orb.mint { width: 34vmax; height: 34vmax; right: 12vw; bottom: -18vmax; background: var(--mint); opacity: 0.14; }
+#ambient { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -2; pointer-events: none; }
+.vignette { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(3, 9, 15, 0.62) 100%); }
+#fx { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 50; pointer-events: none; }
+body[data-screen="game"] #ambient, body[data-screen="game"] .vignette, body[data-screen="game"] #fx { display: none; }
+
+main {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+/* ---------- 화면 (카드 없이 장면 위에 바로 놓음) ---------- */
+.screen {
+  width: min(720px, 100%);
+  text-align: center;
+  animation: rise 0.6s ease both;
+  text-shadow: 0 2px 14px rgba(3, 9, 15, 0.7);
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.logo {
+  margin: 0;
+  font-size: clamp(42px, 11vw, 92px);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  padding-left: 0.2em;       /* letter-spacing 때문에 오른쪽으로 쏠리는 것 보정 */
+  line-height: 1.05;
+  text-shadow: 0 0 36px rgba(225, 245, 250, 0.35), 0 2px 18px rgba(3, 9, 15, 0.6);
+  animation: titleFloat 6s ease-in-out infinite;
+}
+@keyframes titleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.heading { margin: 0 0 8px; font-size: clamp(16px, 3vw, 20px); font-weight: 500; letter-spacing: 0.3em; padding-left: 0.3em; color: var(--ink-dim); }
+.lead { margin: 16px 0 6px; color: var(--ink-dim); font-size: clamp(15px, 2.8vw, 19px); letter-spacing: 0.08em; }
+.note { margin: 18px 0 0; font-size: 12px; letter-spacing: 0.14em; color: var(--ink-dim); opacity: 0.75; }
+.note.tip { margin: 6px 0 8px; font-size: 13px; letter-spacing: 0.04em; }
+.msg { margin: 8px 0 0; line-height: 1.6; font-size: clamp(15px, 2.8vw, 18px); }
+
+/* ---------- 물고기 버튼 ---------- */
+.fishmenu { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 18px; }
+.fishmenu.row { flex-direction: row; justify-content: center; flex-wrap: wrap; gap: 8px 64px; margin-top: 14px; }   /* 꼬리끼리 닿지 않게 넉넉히 */
+/* 메뉴의 두 물고기는 일렬로 서지 않고 살짝 어긋나게 헤엄치는 느낌 */
+#playBtn { margin-right: 36px; }
+#howtoBtn { margin-left: 28px; }
+
+.fishbtn {
+  --w: 200px;
+  --flip: 1;
+  --c: var(--coral);
+  --glow: rgba(240, 128, 120, 0.55);
+  position: relative;
+  display: block;
+  width: var(--w);
+  aspect-ratio: 260 / 110;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  text-shadow: 0 1px 6px rgba(3, 9, 15, 0.6);
+}
+.fishbtn.coral { --c: var(--coral); --glow: rgba(240, 128, 120, 0.55); }
+.fishbtn.gold { --c: var(--gold); --glow: rgba(232, 196, 110, 0.5); }
+.fishbtn.mint { --c: var(--mint); --glow: rgba(140, 208, 170, 0.5); }
+.fishbtn.big { --w: 260px; font-size: 22px; }
+.fishbtn.mid { --w: 210px; font-size: 16px; }
+.fishbtn.small { --w: 150px; font-size: 15px; }
+.fishbtn.flip { --flip: -1; }
+
+/* 둥둥 떠 있는 움직임 (버튼마다 시작 위상이 달라 같이 움직이지 않음) */
+.wob { position: absolute; inset: 0; display: block; animation: bob 4.6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-5px) rotate(-1deg); } }
+
+.fishbtn svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  overflow: visible;
+  fill: var(--c);
+  opacity: 0.62;                 /* 몸통과 꼬리가 겹치는 곳이 진해지지 않도록 개별 fill-opacity가 아니라 svg 전체에 투명도 */
+  filter: drop-shadow(0 0 10px var(--glow));
+  transform: scaleX(var(--flip));
+  transition: transform 0.35s cubic-bezier(.2, .9, .3, 1.2), filter 0.3s ease, opacity 0.3s ease;
+}
+.tail { transform-origin: 74px 55px; animation: wag 2s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes wag { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+
+.label {
+  position: absolute; top: 50%; left: 21%; right: 6%;
+  transform: translateY(-52%);
+  text-align: center; white-space: nowrap;
+  font-weight: 500; letter-spacing: 0.08em;
+}
+.fishbtn.flip .label { left: 6%; right: 21%; }
+
+/* hover: 살짝 떠올라 기울고, 꼬리가 빨라지고, glow가 밝아짐 */
+.fishbtn:hover svg, .fishbtn:focus-visible svg {
+  transform: translateY(-3px) rotate(calc(-2.5deg * var(--flip))) scale(calc(1.05 * var(--flip)), 1.05);
+  filter: drop-shadow(0 0 20px var(--glow)) brightness(1.15);
+  opacity: 0.85;
+}
+.fishbtn:hover .tail, .fishbtn:focus-visible .tail { animation-duration: 0.4s; }
+.fishbtn:focus-visible { outline: none; }
+.fishbtn:focus-visible .label { text-decoration: underline; text-underline-offset: 5px; text-decoration-thickness: 1px; }
+/* 누르는 순간: 꾹 눌렸다가 통통 튀어오름 */
+.fishbtn.pressed .wob { animation: squish 0.34s ease-out; }
+@keyframes squish { 0% { transform: scale(1); } 30% { transform: scale(0.92, 1.06); } 65% { transform: scale(1.05, 0.96); } 100% { transform: scale(1); } }
+
+/* ---------- How to Play: 세 단계가 물결선을 따라 이어짐 ---------- */
+.flow { position: relative; width: min(640px, 100%); margin: 18px auto 26px; }
+.flowline { position: absolute; left: 0; top: 0; width: 100%; height: auto; aspect-ratio: 640 / 76; overflow: visible; pointer-events: none; }
+.nodes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; }
+.node { display: flex; flex-direction: column; align-items: center; gap: 6px; --accent: var(--ink); }
+.node.coral { --accent: var(--coral); }
+.node.gold { --accent: var(--gold); }
+.node.mint { --accent: var(--mint); }
+.bubble {
+  width: 76px; height: 76px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 26%, transparent), color-mix(in srgb, var(--accent) 8%, transparent) 70%);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: bubbleFloat 5s ease-in-out infinite;
+}
+.node:nth-child(2) .bubble { animation-delay: -1.6s; }
+.node:nth-child(3) .bubble { animation-delay: -3.2s; }
+@keyframes bubbleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.bubble svg { width: 32px; height: 32px; fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.node b { margin-top: 6px; font-size: 15px; letter-spacing: 0.2em; padding-left: 0.2em; }
+.node .desc { font-size: 13.5px; line-height: 1.65; color: var(--ink-dim); }
+
+/* ---------- 로딩 / 오류 ---------- */
+.pulse {
+  width: 46px; height: 46px; margin: 0 auto 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(225, 245, 250, 0.5);
+  animation: breathe 1.6s ease-in-out infinite;
+}
+.screen.error .pulse { animation: none; border-color: rgba(240, 128, 120, 0.7); }
+.screen.error .msg { color: #f6b3ad; }
+@keyframes breathe { 0%, 100% { transform: scale(0.8); opacity: 0.35; } 50% { transform: scale(1.12); opacity: 0.9; } }
+
+/* ---------- 게임 화면 ---------- */
+/* video와 canvas를 같은 크기로 겹치고, 거울처럼 좌우 반전 (canvas 좌표를 따로 뒤집을 필요 없음) */
+#stage {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 4 / 3;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: rise 0.45s ease both;
+}
+#video, #warp, #overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+/* WebGL warp canvas는 face morph 효과 중에만 보임 (video, overlay와 같이 좌우 반전) */
+#warp { visibility: hidden; }
+
+/* 게임 UI (HTML): 얇고 반투명한 텍스트만, 과한 HUD 느낌 없이 */
+#hud, #banner, #debugGame {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  color: var(--ink);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+#hud {
+  top: 14px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  font-size: clamp(13px, 2.2vw, 20px);
+  letter-spacing: 0.08em;
+  opacity: 0.9;
+}
+#time.warn { color: var(--coral); }
+#banner {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+#bannerTitle { font-size: clamp(26px, 5vw, 48px); font-weight: 600; letter-spacing: 0.18em; padding-left: 0.18em; }
+#bannerSub { font-size: clamp(13px, 2vw, 18px); opacity: 0.8; }
+#bannerSub:empty { display: none; }
+#bannerHint { font-size: clamp(13px, 2vw, 18px); letter-spacing: 0.1em; margin-top: 6px; }
+#debugGame { left: 20px; bottom: 12px; font-size: 12px; opacity: 0.55; }
+
+/* 개발용 상태 줄 */
+#status { margin: 0; font-size: 12px; color: var(--ink-dim); }
+#status.error { color: #f88; }
+
+/* ---------- 작은 화면 ---------- */
+@media (max-width: 600px) {
+  #playBtn { margin-right: 14px; --w: 230px; }
+  #howtoBtn { margin-left: 14px; }
+  /* How to Play: 가로 흐름 대신 위에서 아래로 이어지는 흐름 */
+  .flowline { display: none; }
+  .nodes { grid-template-columns: 1fr; gap: 22px; }
+  .node { display: grid; grid-template-columns: 60px 1fr; grid-template-rows: auto auto; column-gap: 16px; row-gap: 2px; align-items: center; text-align: left; padding: 0 8px; position: relative; }
+  .node .bubble { width: 60px; height: 60px; grid-row: 1 / span 2; }
+  .node b { margin: 0; align-self: end; padding-left: 0; }
+  .node .desc { align-self: start; }
+  .node:not(:last-child)::after { content: ""; position: absolute; left: 38px; top: 64px; height: 24px; border-left: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen, #stage, .pulse, .wob, .tail, .logo, .bubble { animation: none; }
+  .fishbtn svg { transition: none; }
+}

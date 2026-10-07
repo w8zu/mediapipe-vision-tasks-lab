@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FACE FISH</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- 빌드 없이 CDN에서 바로 불러옴 (버전 고정). app.js의 WASM_BASE 버전과 같아야 함 -->
+  <script type="importmap">
+    { "imports": { "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.0/vision_bundle.mjs" } }
+  </script>
+</head>
+<body data-screen="menu">
+  <!-- 물고기 버튼 공통 도형 (꼬리 / 몸통). 색은 각 버튼의 --c 로 칠해짐 -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <g id="fTail"><path d="M74 55C52 40 26 20 3 16C16 38 16 72 3 94C26 90 52 70 74 55Z"/></g>
+      <g id="fBody">
+        <ellipse cx="152" cy="55" rx="100" ry="42"/>
+        <ellipse cx="166" cy="36" rx="62" ry="8" fill="#fff" fill-opacity=".2" stroke="none"/>
+        <circle cx="226" cy="46" r="3.2" fill="#10202c" fill-opacity=".6" stroke="none"/>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="backdrop" aria-hidden="true"><i class="orb coral"></i><i class="orb gold"></i><i class="orb mint"></i></div>
+  <canvas id="ambient" aria-hidden="true"></canvas>   <!-- 메뉴 뒤에서 천천히 떠다니는 물고기와 거품 -->
+  <div class="vignette" aria-hidden="true"></div>
+  <canvas id="fx" aria-hidden="true"></canvas>        <!-- 버튼 hover / click 때 생기는 작은 거품과 물결 -->
+
+  <main id="app">
+    <!-- 웹페이지 UI 화면: menu / howto / loading / game  (게임 phase ready/playing/over와는 별개) -->
+
+    <!-- 메인 메뉴 -->
+    <section id="menuScreen" class="screen" aria-labelledby="menuTitle">
+      <h1 id="menuTitle" class="logo">FACE FISH</h1>
+      <p class="lead">잡고, 옮기고, 먹어보세요</p>
+      <div class="fishmenu">
+        <button id="playBtn" class="fishbtn coral big" type="button" data-fx="coral" style="--d:0s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">Play</span></span>
+        </button>
+        <button id="howtoBtn" class="fishbtn gold mid" type="button" data-fx="gold" style="--d:-1.4s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">How to Play</span></span>
+        </button>
+      </div>
+      <p class="note">웹캠이 필요해요</p>
+    </section>
+
+    <!-- How to Play -->
+    <section id="howtoScreen" class="screen" aria-labelledby="howtoTitle" hidden>
+      <h2 id="howtoTitle" class="heading">HOW TO PLAY</h2>
+      <div class="flow">
+        <!-- PINCH → MOVE → EAT 가 물결선으로 이어지고, 작은 물고기가 그 선을 따라 헤엄침 -->
+        <svg class="flowline" viewBox="0 0 640 76" aria-hidden="true" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <linearGradient id="flowGrad" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0" stop-color="#f08078"/><stop offset="0.5" stop-color="#e8c46e"/><stop offset="1" stop-color="#8cd0aa"/>
+            </linearGradient>
+          </defs>
+          <path id="flowPath" d="M0 38Q53 12 107 38T214 38T320 38T427 38T533 38T640 38" fill="none" stroke="url(#flowGrad)" stroke-opacity=".5" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="1 9"/>
+          <g class="swimmer" fill="#f08078" fill-opacity=".8">
+            <g transform="translate(-13 -5.5) scale(.1)"><use href="#fTail"/><use href="#fBody"/></g>
+            <animateMotion dur="10s" repeatCount="indefinite" rotate="auto"><mpath href="#flowPath"/></animateMotion>
+          </g>
+        </svg>
+        <ol class="nodes">
+          <li class="node coral">
+            <span class="bubble"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 6.5c-2.6 3.2-2.6 8.8 0 12M17 6.5c2.6 3.2 2.6 8.8 0 12"/><ellipse cx="12" cy="12.5" rx="3.4" ry="2"/></svg></span>
+            <b>PINCH</b>
+            <span class="desc">엄지와 검지로<br>물고기를 집어요</span>
+          </li>
+          <li class="node gold">
+            <span class="bubble"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M13 6l6 6-6 6"/></svg></span>
+            <b>MOVE</b>
+            <span class="desc">잡은 물고기를<br>입 쪽으로 가져가요</span>
+          </li>
+          <li class="node mint">
+            <span class="bubble"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="12" rx="8" ry="5.5"/><path d="M8 12h8"/></svg></span>
+            <b>EAT</b>
+            <span class="desc">입을 벌리면<br>냠</span>
+          </li>
+        </ol>
+      </div>
+      <p class="note tip">같은 색을 이어서 먹으면 얼굴이 더 크게 변해요</p>
+      <div class="fishmenu row">
+        <button id="backBtn" class="fishbtn mint small flip" type="button" data-fx="mint" style="--d:-0.8s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">Back</span></span>
+        </button>
+        <button id="startGameBtn" class="fishbtn coral mid" type="button" data-fx="coral" style="--d:-2.2s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">Start Game</span></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 카메라 / 모델 준비 중, 또는 오류 -->
+    <section id="loadingScreen" class="screen" aria-live="polite" hidden>
+      <div id="loadingPulse" class="pulse" aria-hidden="true"></div>
+      <p id="loadingMsg" class="msg">카메라를 준비하고 있어요...</p>
+      <p id="loadingHint" class="note" hidden></p>
+      <div id="loadingActions" class="fishmenu row" hidden>
+        <button id="loadingBackBtn" class="fishbtn mint small flip" type="button" data-fx="mint" style="--d:-0.8s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">Back</span></span>
+        </button>
+        <button id="retryBtn" class="fishbtn coral mid" type="button" data-fx="coral" style="--d:-2.2s">
+          <span class="wob"><svg viewBox="0 0 260 110" aria-hidden="true"><use class="tail" href="#fTail"/><use href="#fBody"/></svg><span class="label">Try Again</span></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 게임 화면: 카메라 영상 + WebGL morph + overlay canvas + HTML HUD -->
+    <div id="stage" hidden>
+      <video id="video" playsinline muted></video>
+      <!-- face morph용 WebGL canvas: 효과 중에만 보이고, 영상을 국소 warp해서 video 위에 덮어 그림 -->
+      <canvas id="warp"></canvas>
+      <canvas id="overlay"></canvas>
+      <!-- 게임 UI는 canvas가 아니라 HTML (canvas는 좌우 반전되어 있어 글자가 뒤집힘) -->
+      <div id="hud" hidden>
+        <span id="score">SCORE  0</span>
+        <span id="time">TIME  45</span>
+      </div>
+      <div id="banner" hidden>
+        <div id="bannerTitle"></div>
+        <div id="bannerSub"></div>
+        <div id="bannerHint"></div>
+      </div>
+      <div id="debugGame" hidden></div>
+    </div>
+
+    <!-- 개발용: 상태/FPS 줄. ?perf 또는 DEBUG_LANDMARKS일 때만 보임. 기존 START CAMERA 버튼은 Play가 대신 누르므로 숨김 -->
+    <button id="startBtn" type="button" hidden disabled>START CAMERA</button>
+    <p id="status" hidden>Loading models...</p>
+  </main>
+
+  <script type="module" src="menu-fx.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
